@@ -224,8 +224,8 @@ hook 'before_template' => sub {
     $tokens->{button} = sub {
         my $obj = shift if blessed $_[0];
         my $attributes = &process_attributes;
-        my ($value) = @_;
-        return qq(<input type="button" value="$value" $attributes />);
+        my ($name, $value) = @_;
+        return qq(<input type="button" name="$name" value="$value" $attributes />);
     };
 
     $tokens->{hidden} = sub {
