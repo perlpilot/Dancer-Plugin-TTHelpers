@@ -32,7 +32,7 @@ Toolkit mechanisms for generating forms.  Also, I got tired of writing
 the boiler-plate for CSS and Javascript.  Then I remembered when I
 was working with Rails a few years ago, there were some handy
 routines for generating this stuff, so after looking around briefly
-for something to fit the bill, I decided to make my own.
+for something similar to what I wanted, I decided to make my own.
 
 This was the result.
 
@@ -42,11 +42,12 @@ By using this module in your Dancer app, new routines are made available from
 within your views that aid in generating HTML for forms and the standard HTML
 required for include CSS or Javascript files.
 
-Following are the list of routines available from within you templates:
+Following are the list of routines available from within your templates.
+Items within square brackets(C< [ ] >) are optional and may be omitted:
 
 =over
 
-=item C<css(FILE, [ IE_COND ], [ ATTRIBUTES ])>
+=item C<css(FILE, [ IE_COND ], [ ATTR ])>
 
 Outputs a C<< <link> >> tag.  C<FILE> should be the name of a CSS
 file within the F<public/css> directory of your app.  If C<FILE> does not 
@@ -64,7 +65,7 @@ which results in the following output:
     <link rel='stylesheet' href='http://localhost:3000/css/print.css' type='text/css' media="print" />
 <!--[if lt IE 8]><link rel='stylesheet' href='http://localhost:3000/css/ie.css' type='text/css' media="screen,projection" /><![endif]-->
 
-=item C<js(FILE, [ IE_COND ], [ ATTRIBUTES ])>
+=item C<js(FILE, [ IE_COND ], [ ATTR ])>
 
 Outputs a C<< <script> >> tag with appropriate C<language> and C<type>
 attributes for javascript.  C<FILE> should be the name of a javascript file
@@ -81,17 +82,37 @@ which results in the following output:
 
     <script languages='javascript' src='http://localhost:3000/js/jquery.js' type='text/javascript'></script>
 
-=item radio
+=item C<radio([OBJ], NAME, [VALUES], [SEPARATOR])>
 
-=item text
+Examples:
 
-=item select
+    <% radio('item', [ 'hat', 'shirt', 'shorts' ]) %>
+    <% radio(obj, 'size', [ 'small', 'medium', 'large' ]) %>
 
-=item hidden
+=item C<text([OBJ], NAME, VALUE, [ ATTR ])>
 
-=item checkbox
 
-=item button
+Example:
+
+=item C<select([OBJ], NAME, OPTIONS, [KEY], [VALUE], [ ATTR ])>
+
+
+Example:
+
+=item C<checkbox([OBJ], NAME, CHECKED, [ ATTR ])>
+
+
+Example:
+
+=item C<button([OBJ], NAME, VALUE, [ ATTR ])>
+
+
+Example:
+
+=item C<hidden([OBJ], NAME, VALUE, [ ATTR ] )>
+
+
+Example:
 
 =back
 
