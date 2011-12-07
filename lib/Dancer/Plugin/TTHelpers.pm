@@ -1,5 +1,5 @@
 package Dancer::Plugin::TTHelpers;
-# ABSTRACT: Useful routines in Template Toolkit views
+# ABSTRACT: Useful routines for generating HTML for use with Dancer + TT
 
 use strict; use warnings;
 use 5.10.0;
