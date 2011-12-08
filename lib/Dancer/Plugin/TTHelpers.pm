@@ -60,7 +60,7 @@ Example usage:
     <% css('print', { media => "print" }) %>
     <% css('ie', 'lt IE 8' { media => "screen,projection" }) %>
 
-which results in the following output:
+which could result in the following output:
 
     <link rel='stylesheet' href='http://localhost:3000/css/print.css' type='text/css' media="print" />
 <!--[if lt IE 8]><link rel='stylesheet' href='http://localhost:3000/css/ie.css' type='text/css' media="screen,projection" /><![endif]-->
@@ -78,7 +78,7 @@ Example usage:
 
     <% js('jquery') %>
 
-which results in the following output:
+which could result in the following output:
 
     <script languages='javascript' src='http://localhost:3000/js/jquery.js' type='text/javascript'></script>
 
@@ -86,7 +86,8 @@ which results in the following output:
 
 The rest of the helpers are for generating form elements.  Each one may optionally pass an
 object as its first argument.  It is expected that this object will have an accessor with
-the same name as the one specified as the second argument.
+the same name as the one specified as the second argument so that the form elements can be
+initialized with the object's values by default.
 
 =over
 
@@ -100,15 +101,19 @@ Examples:
 =item C<text([OBJ], NAME, VALUE, [ ATTR ])>
 
 
-Example:
+Examples:
+
+    <% text('title') %>
+    <% text(person, 'name') %>
+    <% text(person, 'dob', { size => 8 }) %>
 
 =item C<select([OBJ], NAME, OPTIONS, [KEY], [VALUE], [ ATTR ])>
 
-
 Example:
 
-=item C<checkbox([OBJ], NAME, CHECKED, [ ATTR ])>
+    <% select('priority', [ 'low','medium','high' ]) %>
 
+=item C<checkbox([OBJ], NAME, CHECKED, [ ATTR ])>
 
 Example:
 
