@@ -82,6 +82,14 @@ which results in the following output:
 
     <script languages='javascript' src='http://localhost:3000/js/jquery.js' type='text/javascript'></script>
 
+=back
+
+The rest of the helpers are for generating form elements.  Each one may optionally pass an
+object as its first argument.  It is expected that this object will have an accessor with
+the same name as the one specified as the second argument.
+
+=over
+
 =item C<radio([OBJ], NAME, [VALUES], [SEPARATOR])>
 
 Examples:
@@ -247,6 +255,5 @@ hook 'before_template' => sub {
     };
 
 };
-
 
 1;
