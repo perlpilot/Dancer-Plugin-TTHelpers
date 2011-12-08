@@ -117,7 +117,7 @@ Example:
 
 Example:
 
-=item C<button([OBJ], NAME, VALUE, [ ATTR ])>
+=item C<button([OBJ], NAME, [VALUE], [ ATTR ])>
 
 
 Example:
@@ -238,6 +238,7 @@ hook 'before_template' => sub {
         my $obj = shift if blessed $_[0];
         my $attributes = &process_attributes;
         my ($name, $value) = @_;
+        $value //= $name;
         return qq(<input type="button" name="$name" value="$value" $attributes />);
     };
 
