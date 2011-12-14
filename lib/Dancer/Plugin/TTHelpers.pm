@@ -137,6 +137,19 @@ use Dancer ':syntax';
 use Try::Tiny;
 use Scalar::Util qw/ blessed /;
 
+hook 'before_template' => sub {
+    my $tokens = shift;
+
+    $tokens->{css} = \&css;
+    $tokens->{js} = \&js;
+    $tokens->{radio} = \&radio;
+    $tokens->{text} = \&text;
+    $tokens->{select} = \&select;
+    $tokens->{button} = \&button;
+    $tokens->{checkbox} = \&checkbox;
+    $tokens->{hidden} = \&hidden;
+};
+
 sub make_attribute_string {
     return defined $_[0] 
          ? join " ", map { $_ . '="' . $_[0]->{$_} . '"' } keys %{$_[0]}
@@ -157,109 +170,110 @@ sub process_attributes {
 
 sub compute_idx {
     my $obj = shift;
-    my $idx = try { $obj->can('id') && "[" . ($obj->id // "") . "]" } catch { "[]" };
+    my $idx = try { $obj->can('id') && "[" . ($obj->id // "") . "]" } catch { "" };
     return $idx;
 }
 
-hook 'before_template' => sub {
-    my $tokens = shift;
+sub js {
+    my $attributes = &process_attributes;
+    my ( $uri, $ie_cond ) = @_;
+    $uri .= '.css' unless $uri =~ /\.css$/;
+    return
+        ($ie_cond ? "<!--[if $ie_cond]>" : '')
+      . qq(<link rel='stylesheet' href=')
+      . request->uri_base . "/css/$uri"
+      . qq(' type='text/css' $attributes />)
+      . ($ie_cond ? "<![endif]-->" : '');
+}
 
-    $tokens->{css} = sub {
-        my $attributes = &process_attributes;
-        my ( $uri, $ie_cond ) = @_;
-        $uri .= '.css' unless $uri =~ /\.css$/;
-        return
-            ($ie_cond ? "<!--[if $ie_cond]>" : '')
-          . qq(<link rel='stylesheet' href=')
-          . request->uri_base . "/css/$uri"
-          . qq(' type='text/css' $attributes />)
-          . ($ie_cond ? "<![endif]-->" : '');
-    };
+sub css {
+    my ( $uri, $ie_cond ) = @_;
+    $uri .= '.js' unless $uri =~ /\.js$/;
+    return
+        ($ie_cond ? "<!--[if $ie_cond]>" : '')
+      . qq(<script languages='javascript' src=')
+      . request->uri_base . "/js/$uri"
+      . qq(' type='text/javascript'></script>)
+      . ($ie_cond ? "<![endif]-->" : '');
+}
 
-    $tokens->{js} = sub {
-        my ( $uri, $ie_cond ) = @_;
-        $uri .= '.js' unless $uri =~ /\.js$/;
-        return
-            ($ie_cond ? "<!--[if $ie_cond]>" : '')
-          . qq(<script languages='javascript' src=')
-          . request->uri_base . "/js/$uri"
-          . qq(' type='text/javascript'></script>)
-          . ($ie_cond ? "<![endif]-->" : '');
-    };
 
-    $tokens->{radio} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $values, $sep) = @_;
-        $sep ||= '';
-        my ($i, @ret) = 0;
-        my $on = do { try { $obj->$name }  } // @{$values}[0];
-        my $idx = compute_idx($obj);
-        while ($i < @$values) { 
-            my ($val,$disp) = @{$values}[$i, $i+1];
-            my $checked = $on eq $val ? 'checked="checked"' : "";
-            push @ret, qq(<input type="radio" name="$name$idx" value="$val" $checked $attributes />$disp);
-        } continue { $i+=2 }
-        return ref $sep eq 'ARRAY' ? @ret : join $sep,@ret;
-    };
+sub radio {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $values, $sep) = @_;
+    $sep ||= '';
+    my ($i, @ret) = 0;
+    my $on = do { try { $obj->$name }  } // @{$values}[0];
+    my $idx = compute_idx($obj);
+    while ($i < @$values) { 
+        my ($val,$disp) = @{$values}[$i, $i+1];
+        my $checked = $on eq $val ? 'checked="checked"' : "";
+        push @ret, qq(<input type="radio" name="$name$idx" value="$val" $checked $attributes />$disp);
+    } continue { $i+=2 }
+    return ref $sep eq 'ARRAY' ? @ret : join $sep,@ret;
+}
 
-    $tokens->{text} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $value) = @_;
-        my $idx = compute_idx($obj);
-        my $val = do { try { $obj->$name } } // $value // "";
-        return qq(<input type="text" name="$name$idx" value="$val" $attributes />);
-    };
 
-    $tokens->{select} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $options, $key, $value) = @_;
-        my $idx = compute_idx($obj);
-        my $str = $name ? qq(<select name="$name$idx" $attributes>) : "<select>";
-        my $on = $obj && $name ? ($obj->$name // "") : "";
-        for my $o (@$options) {
-            my ($disp, $val);
-            if ($key && $value) {
-                $disp = do { try { $o->$value } catch { $o->{$value} } } // "";
-                $val  = do { try { $o->$key } catch { $o->{$key} } } // "";
-            } else {
-                $disp = $val = $o;
-            }
-            my $selected = $on eq $val ? " selected" : "";
-            $str .= qq(<option value="$val"$selected>$disp</option>);
+sub text {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $value) = @_;
+    my $idx = compute_idx($obj);
+    my $val = do { try { $obj->$name } } // $value // "";
+    return qq(<input type="text" name="$name$idx" value="$val" $attributes />);
+}
+
+
+sub select {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $options, $key, $value) = @_;
+    my $idx = compute_idx($obj);
+    my $str = $name ? qq(<select name="$name$idx" $attributes>) : "<select>";
+    my $on = $obj && $name ? ($obj->$name // "") : "";
+    for my $o (@$options) {
+        my ($k, $v);
+        if (ref $o eq 'HASH') {
+            ($k,$v) = each %$o;
+        } elsif ($key && $value) {
+            $k  = do { try { $o->$key } catch { $o->{$key} } } // "";
+            $v = do { try { $o->$value } catch { $o->{$value} } } // "";
+        } else {
+            $k = $v = $o;
         }
-        $str .= "</select>";
-        return $str;
-    };
+        $str .= qq(<option value="$k") . ($on eq $k ? " selected" : "") . qq(>$v</option>);
+    }
+    $str .= "</select>";
+    return $str;
+}
 
-    $tokens->{button} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $value) = @_;
-        $value //= $name;
-        return qq(<input type="button" name="$name" value="$value" $attributes />);
-    };
 
-    $tokens->{hidden} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $value) = @_;
-        my $idx = compute_idx($obj);
-        return qq(<input type="hidden" name="$name$idx" value="$value" $attributes />);
-    };
+sub button {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $value) = @_;
+    $value //= $name;
+    return qq(<input type="button" name="$name" value="$value" $attributes />);
+}
 
-    $tokens->{checkbox} = sub {
-        my $obj = shift if blessed $_[0];
-        my $attributes = &process_attributes;
-        my ($name, $checked) = @_;
-        my $idx = compute_idx($obj);
-        $checked = try { $obj->$name } catch { $checked // 1 };
-        $attributes .= " checked" if $checked;
-        return qq(<input type="checkbox" name="$name$idx" value="1" $attributes />);
-    };
+sub hidden {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $value) = @_;
+    my $idx = compute_idx($obj);
+    return qq(<input type="hidden" name="$name$idx" value="$value" $attributes />);
+}
 
-};
+
+sub checkbox {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
+    my ($name, $checked) = @_;
+    my $idx = compute_idx($obj);
+    $checked = try { $obj->$name } catch { $checked // 1 };
+    $attributes .= " checked" if $checked;
+    return qq(<input type="checkbox" name="$name$idx" value="1" $attributes />);
+}
 
 1;
