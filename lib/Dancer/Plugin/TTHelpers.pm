@@ -136,6 +136,7 @@ use 5.10.0;
 use Dancer ':syntax';
 use Try::Tiny;
 use Scalar::Util qw/ blessed /;
+use HTML::FormHelpers qw(:all);
 
 hook 'before_template' => sub {
     my $tokens = shift;
@@ -150,28 +151,9 @@ hook 'before_template' => sub {
     $tokens->{hidden} = \&hidden;
 };
 
-# NOTE: The first hashref we come across is assumed to be the 
-#       attributes
-sub process_attributes {
-    for my $i (0..$#_) {
-        if (ref $_[$i] eq 'HASH') {
-            my $attrs = splice @_, $i, 1;
-            return join " ", map { $_ . '="' . $_[0]->{$_} . '"' } keys %{$_[0]};
-        }
-    }
-    return "";
-}
-
-sub process_args {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
-    my $idx = try { $obj->can('id') && "[" . ($obj->id // "") . "]" } catch { "" };
-    my $name = $_[0] . $idx;
-    return ($obj,$name,$attributes);
-}
 
 sub js {
-    my $attributes = &process_attributes;
+    my $attributes = &HTML::FormHelpers::process_attributes;
     my ( $uri, $ie_cond ) = @_;
     $uri .= '.css' unless $uri =~ /\.css$/;
     return
@@ -191,74 +173,6 @@ sub css {
       . request->uri_base . "/js/$uri"
       . qq(' type='text/javascript'></script>)
       . ($ie_cond ? "<![endif]-->" : '');
-}
-
-
-sub radio {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $values, $sep) = @_;
-    $sep ||= '';
-    my ($i, @ret) = 0;
-    my $on = do { try { $obj->$name }  } // @{$values}[0];
-    while ($i < @$values) { 
-        my ($val,$disp) = @{$values}[$i, $i+1];
-        my $checked = $on eq $val ? 'checked="checked"' : "";
-        push @ret, qq(<input type="radio" name="$fname" value="$val" $checked $attributes />$disp);
-    } continue { $i+=2 }
-    return ref $sep eq 'ARRAY' ? @ret : join $sep,@ret;
-}
-
-
-sub text {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $value) = @_;
-    my $val = do { try { $obj->$name } } // $value // "";
-    return qq(<input type="text" name="$fname" value="$val" $attributes />);
-}
-
-
-sub select {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $options, $key, $value) = @_;
-    my $str = $name ? qq(<select name="$fname" $attributes>) : "<select>";
-    my $on = $obj && $name ? ($obj->$name // "") : "";
-    for my $o (@$options) {
-        my ($k, $v);
-        if (ref $o eq 'HASH') {
-            ($k,$v) = each %$o;
-        } elsif ($key && $value) {
-            $k  = do { try { $o->$key } catch { $o->{$key} } } // "";
-            $v = do { try { $o->$value } catch { $o->{$value} } } // "";
-        } else {
-            $k = $v = $o;
-        }
-        $str .= qq(<option value="$k") . ($on eq $k ? " selected" : "") . qq(>$v</option>);
-    }
-    $str .= "</select>";
-    return $str;
-}
-
-
-sub button {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $value) = @_;
-    $value //= $name;
-    return qq(<input type="button" name="$fname" value="$value" $attributes />);
-}
-
-sub hidden {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $value) = @_;
-    return qq(<input type="hidden" name="$fname" value="$value" $attributes />);
-}
-
-
-sub checkbox {
-    my ($obj, $fname, $attributes) = &process_args;
-    my ($name, $checked) = @_;
-    $checked = try { $obj->$name } catch { $checked // 1 };
-    $attributes .= " checked" if $checked;
-    return qq(<input type="checkbox" name="$fname" value="1" $attributes />);
 }
 
 1;
