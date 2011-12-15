@@ -150,28 +150,24 @@ hook 'before_template' => sub {
     $tokens->{hidden} = \&hidden;
 };
 
-sub make_attribute_string {
-    return defined $_[0] 
-         ? join " ", map { $_ . '="' . $_[0]->{$_} . '"' } keys %{$_[0]}
-         : "";
-}
-
 # NOTE: The first hashref we come across is assumed to be the 
 #       attributes
 sub process_attributes {
     for my $i (0..$#_) {
         if (ref $_[$i] eq 'HASH') {
             my $attrs = splice @_, $i, 1;
-            return make_attribute_string($attrs);
+            return join " ", map { $_ . '="' . $_[0]->{$_} . '"' } keys %{$_[0]};
         }
     }
     return "";
 }
 
-sub compute_idx {
-    my $obj = shift;
+sub process_args {
+    my $obj = shift if blessed $_[0];
+    my $attributes = &process_attributes;
     my $idx = try { $obj->can('id') && "[" . ($obj->id // "") . "]" } catch { "" };
-    return $idx;
+    my $name = $_[0] . $idx;
+    return ($obj,$name,$attributes);
 }
 
 sub js {
@@ -199,38 +195,32 @@ sub css {
 
 
 sub radio {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $values, $sep) = @_;
     $sep ||= '';
     my ($i, @ret) = 0;
     my $on = do { try { $obj->$name }  } // @{$values}[0];
-    my $idx = compute_idx($obj);
     while ($i < @$values) { 
         my ($val,$disp) = @{$values}[$i, $i+1];
         my $checked = $on eq $val ? 'checked="checked"' : "";
-        push @ret, qq(<input type="radio" name="$name$idx" value="$val" $checked $attributes />$disp);
+        push @ret, qq(<input type="radio" name="$fname" value="$val" $checked $attributes />$disp);
     } continue { $i+=2 }
     return ref $sep eq 'ARRAY' ? @ret : join $sep,@ret;
 }
 
 
 sub text {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $value) = @_;
-    my $idx = compute_idx($obj);
     my $val = do { try { $obj->$name } } // $value // "";
-    return qq(<input type="text" name="$name$idx" value="$val" $attributes />);
+    return qq(<input type="text" name="$fname" value="$val" $attributes />);
 }
 
 
 sub select {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $options, $key, $value) = @_;
-    my $idx = compute_idx($obj);
-    my $str = $name ? qq(<select name="$name$idx" $attributes>) : "<select>";
+    my $str = $name ? qq(<select name="$fname" $attributes>) : "<select>";
     my $on = $obj && $name ? ($obj->$name // "") : "";
     for my $o (@$options) {
         my ($k, $v);
@@ -250,30 +240,25 @@ sub select {
 
 
 sub button {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $value) = @_;
     $value //= $name;
-    return qq(<input type="button" name="$name" value="$value" $attributes />);
+    return qq(<input type="button" name="$fname" value="$value" $attributes />);
 }
 
 sub hidden {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $value) = @_;
-    my $idx = compute_idx($obj);
-    return qq(<input type="hidden" name="$name$idx" value="$value" $attributes />);
+    return qq(<input type="hidden" name="$fname" value="$value" $attributes />);
 }
 
 
 sub checkbox {
-    my $obj = shift if blessed $_[0];
-    my $attributes = &process_attributes;
+    my ($obj, $fname, $attributes) = &process_args;
     my ($name, $checked) = @_;
-    my $idx = compute_idx($obj);
     $checked = try { $obj->$name } catch { $checked // 1 };
     $attributes .= " checked" if $checked;
-    return qq(<input type="checkbox" name="$name$idx" value="1" $attributes />);
+    return qq(<input type="checkbox" name="$fname" value="1" $attributes />);
 }
 
 1;
