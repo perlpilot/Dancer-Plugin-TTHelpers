@@ -171,7 +171,7 @@ sub js {
     return
         ($ie_cond ? "<!--[if $ie_cond]>" : '')
       . qq(<script languages='javascript' src=')
-      . request->uri_base . "/js/$uri"
+      . request->uri_base . "/javascripts/$uri"
       . qq(' type='text/javascript' $attributes></script>)
       . ($ie_cond ? "<![endif]-->" : '');
 }
