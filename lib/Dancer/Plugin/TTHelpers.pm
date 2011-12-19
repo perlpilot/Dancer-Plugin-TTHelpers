@@ -152,8 +152,8 @@ hook 'before_template' => sub {
 };
 
 
-sub js {
-    my $attributes = &HTML::FormHelpers::process_attributes;
+sub css {
+    my $attributes = &process_attributes;
     my ( $uri, $ie_cond ) = @_;
     $uri .= '.css' unless $uri =~ /\.css$/;
     return
@@ -164,14 +164,15 @@ sub js {
       . ($ie_cond ? "<![endif]-->" : '');
 }
 
-sub css {
+sub js {
+    my $attributes = &process_attributes;
     my ( $uri, $ie_cond ) = @_;
     $uri .= '.js' unless $uri =~ /\.js$/;
     return
         ($ie_cond ? "<!--[if $ie_cond]>" : '')
       . qq(<script languages='javascript' src=')
       . request->uri_base . "/js/$uri"
-      . qq(' type='text/javascript'></script>)
+      . qq(' type='text/javascript' $attributes></script>)
       . ($ie_cond ? "<![endif]-->" : '');
 }
 
