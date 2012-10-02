@@ -153,7 +153,7 @@ hook 'before_template' => sub {
 
 
 sub css {
-    my $attributes = &process_attributes;
+    my $attributes = &HTML::FormHelpers::process_attributes;
     my ( $uri, $ie_cond ) = @_;
     $uri .= '.css' unless $uri =~ /\.css$/;
     return
@@ -165,7 +165,7 @@ sub css {
 }
 
 sub js {
-    my $attributes = &process_attributes;
+    my $attributes = &HTML::FormHelpers::process_attributes;
     my ( $uri, $ie_cond ) = @_;
     $uri .= '.js' unless $uri =~ /\.js$/;
     return
